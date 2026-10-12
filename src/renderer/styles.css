@@ -273,3 +273,5 @@ body[data-platform="darwin"] #toasts { right: 12px; }
 .update-progress { height: 4px; border-radius: 4px; background: var(--panel-2); margin-top: 8px; overflow: hidden; }
 .update-progress > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .2s; }
 .update-progress[hidden] { display: none; }
+.update-actions { display: flex; gap: 8px; flex: none; }
+.update-actions .btn[hidden] { display: none; }

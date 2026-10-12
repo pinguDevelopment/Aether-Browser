@@ -7,7 +7,7 @@ import { clearBrowsingData, hardenUiSession, hardenWebSession, httpExceptions } 
 import * as store from './store';
 import { TabManager } from './tabs';
 import { BrowserAgent } from './agent';
-import { checkForUpdates, getUpdateStatus, initUpdater, installUpdate } from './updater';
+import { checkForUpdates, getUpdateStatus, initUpdater, installUpdate, openReleasePage } from './updater';
 
 // Sandbox every renderer process, including our own UI (unless explicitly started with --no-sandbox, e.g. in CI containers).
 if (!app.commandLine.hasSwitch('no-sandbox')) app.enableSandbox();
@@ -265,6 +265,7 @@ function registerIpc() {
   handle('update:status', () => getUpdateStatus());
   handle('update:check', () => checkForUpdates());
   handle('update:install', () => installUpdate());
+  handle('update:openPage', () => openReleasePage());
   handle('ai:activePage', () => {
     const tab = tabs?.active();
     return tab?.kind === 'web' ? { title: tab.title, url: tab.url } : undefined;

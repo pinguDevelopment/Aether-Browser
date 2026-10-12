@@ -134,6 +134,8 @@ export interface UpdateStatus {
   current: string;
   version?: string;
   percent?: number;
+  /** After a failed download: the install can simply be retried. */
+  retry?: boolean;
   message?: string;
 }
 

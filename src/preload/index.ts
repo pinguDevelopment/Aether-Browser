@@ -31,7 +31,7 @@ const api = {
   bookmarks: { get: call('bookmarks:get'), toggle: call('bookmarks:toggle'), remove: call('bookmarks:remove') },
   perms: { list: call('perms:list'), set: call('perms:set'), answer: call('perm:answer') },
   data: { clear: call('data:clear') },
-  update: { status: call('update:status'), check: call('update:check'), install: call('update:install') },
+  update: { status: call('update:status'), check: call('update:check'), install: call('update:install'), openPage: call('update:openPage') },
   ai: { chat: call('ai:chat'), cancel: call('ai:cancel'), models: call('ai:models'), activePage: call('ai:activePage') },
   on(channel: string, cb: (payload: unknown) => void) {
     if (!EVENTS.has(channel)) throw new Error(`Unknown channel ${channel}`);

@@ -317,9 +317,10 @@ async function updateCard(): Promise<HTMLElement> {
   const text = h('div', { class: 'setting-desc' });
   const bar = h('div', { class: 'update-progress' }, h('div', {}));
   const btn = h('button', { class: 'btn primary' });
+  const pageBtn = h('button', { class: 'btn', onclick: () => void api.update.openPage() }, icon('download'), h('span', { text: 'Release-Seite öffnen' }));
   const card = h('div', { class: 'setting update-card' },
     h('div', { class: 'setting-text' }, h('div', { class: 'setting-label', text: 'Updates' }), text, bar),
-    btn,
+    h('div', { class: 'update-actions' }, pageBtn, btn),
   );
   const render = (u: UpdateStatus) => {
     version.textContent = `Version ${u.current} · Prototyp`;
@@ -327,10 +328,11 @@ async function updateCard(): Promise<HTMLElement> {
     card.classList.toggle('error', u.state === 'error');
     bar.hidden = u.state !== 'downloading';
     (bar.firstChild as HTMLElement).style.width = `${u.percent ?? 0}%`;
+    pageBtn.hidden = u.state !== 'error' && u.state !== 'manual';
     const busy = u.state === 'checking' || u.state === 'downloading' || u.state === 'installing';
-    const install = u.state === 'available';
+    const install = u.state === 'available' || (u.state === 'error' && !!u.retry);
     btn.disabled = busy;
-    btn.replaceChildren(icon(install ? 'download' : 'reload'), h('span', { text: install ? 'Jetzt installieren' : 'Nach Updates suchen' }));
+    btn.replaceChildren(icon(install ? 'download' : 'reload'), h('span', { text: u.state === 'error' && u.retry ? 'Erneut versuchen' : install ? 'Jetzt installieren' : 'Nach Updates suchen' }));
     btn.onclick = () => void (install ? api.update.install() : api.update.check());
   };
   render((await api.update.status()) as UpdateStatus);
