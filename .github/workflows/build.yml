@@ -31,7 +31,7 @@ jobs:
       - name: Verify macOS signature
         if: runner.os == 'macOS'
         run: |
-          for app in release/mac*/Aether.app; do
+          for app in release/mac*/*.app; do
             echo "Checking $app"
             codesign --verify --deep --strict --verbose=2 "$app"
             codesign -dv "$app" 2>&1 | grep -E 'Signature|Identifier|Format'
@@ -61,7 +61,41 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: aether-mac-intel
-          path: |
-            release/*.dmg
-            !release/*-arm64.dmg
+          path: release/*-x64.dmg
           if-no-files-found: error
+
+  release:
+    # Push a tag like v0.1.0 to publish a GitHub release with all installers.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: installers
+          merge-multiple: true
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > notes.md <<'NOTES'
+          ## Downloads
+
+          | System | Datei |
+          | --- | --- |
+          | Windows | `Aether-Browser-*-win-x64.exe` |
+          | macOS (Apple Silicon, M1–M4) | `Aether-Browser-*-mac-arm64.dmg` |
+          | macOS (Intel) | `Aether-Browser-*-mac-x64.dmg` |
+          | Linux | `.AppImage` (alle Distributionen) oder `.deb` (Debian/Ubuntu) |
+
+          Die Installer sind noch nicht mit einem Entwicklerzertifikat signiert:
+          - **Windows:** bei „Der Computer wurde durch Windows geschützt“ auf *Weitere Informationen → Trotzdem ausführen* klicken.
+          - **macOS:** beim ersten Start *Systemeinstellungen → Datenschutz & Sicherheit → Dennoch öffnen*. Alternativ im Terminal: `xattr -cr "/Applications/Aether Browser.app"`
+          - **Linux (AppImage):** Datei ausführbar machen (`chmod +x`) und starten.
+          NOTES
+          gh release create "$GITHUB_REF_NAME" installers/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Aether Browser ${GITHUB_REF_NAME}" \
+            --notes-file notes.md

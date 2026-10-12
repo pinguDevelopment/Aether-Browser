@@ -1,8 +1,8 @@
 {
   "name": "aether-browser",
-  "productName": "Aether",
+  "productName": "Aether Browser",
   "version": "0.1.0",
-  "description": "Aether – ein schneller, sicherheitsbewusster Desktop-Browser mit eingebautem AI-Chat.",
+  "description": "Aether Browser – ein schneller, sicherheitsbewusster Desktop-Browser mit eingebautem AI-Chat.",
   "main": "dist/main/index.js",
   "author": {
     "name": "pinguDevelopment",
@@ -34,7 +34,7 @@
   "dependencies": {},
   "build": {
     "appId": "dev.pingu.aether",
-    "productName": "Aether",
+    "productName": "Aether Browser",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -85,7 +85,8 @@
       ],
       "category": "Network",
       "icon": "build/icon.png",
-      "maintainer": "pinguDevelopment"
+      "maintainer": "pinguDevelopment",
+      "executableName": "aether-browser"
     },
     "protocols": [
       {
@@ -105,11 +106,12 @@
     "electronLanguages": [
       "de",
       "en-US"
-    ]
+    ],
+    "artifactName": "Aether-Browser-${version}-${os}-${arch}.${ext}"
   },
-  "homepage": "https://github.com/pinguDevelopment/WebBrowser",
+  "homepage": "https://github.com/pinguDevelopment/AetherBrowser",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pinguDevelopment/WebBrowser.git"
+    "url": "https://github.com/pinguDevelopment/AetherBrowser.git"
   }
 }

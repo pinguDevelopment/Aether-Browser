@@ -9,7 +9,7 @@ import { TabManager } from './tabs';
 
 // Sandbox every renderer process, including our own UI (unless explicitly started with --no-sandbox, e.g. in CI containers).
 if (!app.commandLine.hasSwitch('no-sandbox')) app.enableSandbox();
-app.setName('Aether');
+app.setName('Aether Browser');
 
 const WEB_PARTITION = 'persist:aether-web';
 let win: BrowserWindow | undefined;
@@ -59,7 +59,7 @@ function createWindow() {
     minHeight: 480,
     show: false,
     backgroundColor: '#07080d',
-    title: 'Aether',
+    title: 'Aether Browser',
     titleBarStyle: 'hidden',
     ...(isMac
       ? { trafficLightPosition: { x: 14, y: 13 } }

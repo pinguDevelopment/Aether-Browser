@@ -1,4 +1,4 @@
-# Aether
+# Aether Browser
 
 Ein schneller, sicherheitsbewusster Desktop-Browser für **macOS, Windows und Linux** mit futuristischem Design und eingebautem **AI-Chat**. Gebaut mit Electron (Chromium) und TypeScript.
 
@@ -53,7 +53,9 @@ npm run dist:win     # NSIS-Installer (.exe), auf Windows ausführen
 npm run dist:mac     # .dmg + .zip, auf macOS ausführen
 ```
 
-Die Ergebnisse landen in `release/`. Der GitHub-Actions-Workflow `.github/workflows/build.yml` baut bei jedem Push auf `main` automatisch für alle drei Systeme und stellt die Installer als Artefakte bereit. Die Builds sind noch **nicht signiert**; macOS und Windows zeigen beim ersten Start daher eine Warnung.
+Die Ergebnisse landen in `release/`.
+
+**Release veröffentlichen:** Version in `package.json` anpassen, dann einen Tag pushen (`git tag v0.2.0 && git push origin v0.2.0`). GitHub Actions baut alle Installer und erstellt daraus automatisch ein Release. Der GitHub-Actions-Workflow `.github/workflows/build.yml` baut bei jedem Push auf `main` automatisch für alle drei Systeme und stellt die Installer als Artefakte bereit. Die Builds sind noch **nicht signiert**; macOS und Windows zeigen beim ersten Start daher eine Warnung.
 
 ## Tastenkürzel
 

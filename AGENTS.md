@@ -1,4 +1,4 @@
-# AGENTS.md
+# AGENTS.md – Aether Browser
 
 Arbeitsnotizen für alle, die (Mensch oder KI) an diesem Repo weiterarbeiten. Bitte bei jeder größeren Änderung aktualisieren.
 
@@ -15,6 +15,8 @@ Vollständiger Desktop-Browser für macOS, Windows und Linux. Futuristisches, mo
 - **AI-Anbieter**: Anthropic über das offizielle SDK `@anthropic-ai/sdk` (Standardmodell `claude-opus-5-5`, Streaming, Server-Fallback bei Ablehnung für unterstützte Modelle). Alle anderen (OpenAI, Gemini, Ollama, LM Studio, eigener Endpunkt) über die OpenAI-kompatible `/chat/completions`-Schnittstelle.
 - **API-Keys** nur im Hauptprozess, verschlüsselt mit `safeStorage`. Die UI sieht nur, *ob* ein Key existiert.
 - **Tracker-Blocker**: `@ghostery/adblocker` `FiltersEngine` wird direkt in einem eigenen `onBeforeRequest` aufgerufen (nicht `enableBlockingInSession`), weil Electron pro Session nur einen Listener je webRequest-Event erlaubt und wir dort auch HTTPS-Upgrade und Cookie-Filter brauchen. Engine-Cache: `<userData>/adblock-engine.bin`.
+- Name: **Aether Browser** (Repo `pinguDevelopment/AetherBrowser`, vorher `WebBrowser`). Installer heißen `Aether-Browser-<version>-<os>-<arch>.<ext>`.
+- **Releases**: Tag `v*` pushen → Workflow baut alle Systeme und erstellt ein GitHub-Release mit allen Installern (Job `release`).
 - Sprache der Oberfläche: **Deutsch**.
 - **Paketgröße**: Alle Laufzeit-Pakete stehen in `devDependencies`, weil esbuild sie in `dist/` bündelt; so landet kein `node_modules` im Installer (app.asar < 1 MB). Nur Locales `de` und `en-US`, Kompression `maximum`, DMG als `ULFO`. Der Rest (~90 MB pro Installer) ist Chromium selbst.
 - **Dark Mode erzwingen** (`src/main/darkmode.ts`, Einstellung `forceDarkMode`): Zuerst wird Seiten per DevTools-Protokoll `prefers-color-scheme: dark` gemeldet (nativeTheme allein erreicht Seiteninhalte nicht auf jedem System), damit Seiten mit eigenem Dark Theme dieses nutzen. Ist der Seitenhintergrund danach noch hell, wird per `insertCSS` invertiert; Bilder/Videos werden zurück-invertiert. Hinweis: `insertCSS` mit `cssOrigin: 'user'` lässt sich nicht wieder entfernen, daher Author-Origin.

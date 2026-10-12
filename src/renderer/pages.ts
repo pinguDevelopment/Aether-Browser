@@ -200,7 +200,7 @@ export async function settingsPage(ctx: PageCtx, section = 'general'): Promise<H
       return wrap;
     }],
     ['ai', 'AI-Assistent', 'spark', () => aiSettings(ctx)],
-    ['about', 'Über Aether', 'chip', async () => h('div', { class: 'about' },
+    ['about', 'Über Aether Browser', 'chip', async () => h('div', { class: 'about' },
       h('div', { class: 'brand big' }, h('span', { class: 'brand-mark' }), h('span', { text: 'AETHER' })),
       h('p', { text: 'Version 0.1.0 · Prototyp' }),
       h('p', { class: 'muted', text: 'Jede Website läuft in einem eigenen, abgeschotteten Prozess (Chromium-Sandbox, Context Isolation, kein Node.js-Zugriff). API-Keys werden mit dem Schlüsselbund deines Betriebssystems verschlüsselt und verlassen nie den Hauptprozess.' }),
