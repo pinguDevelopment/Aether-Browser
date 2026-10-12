@@ -2,7 +2,7 @@
 
 Ein schneller, sicherheitsbewusster Desktop-Browser für **macOS, Windows und Linux** mit futuristischem Design und eingebautem **AI-Chat**. Gebaut mit Electron (Chromium) und TypeScript.
 
-> Status: **Prototyp (v0.2.0)**
+> Status: **Prototyp (v0.2.1)**
 
 ## Funktionen
 

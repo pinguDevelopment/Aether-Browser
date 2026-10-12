@@ -137,7 +137,13 @@ async function streamAnthropic(
   onText('\n\n_(Agent nach zu vielen Schritten angehalten.)_');
 }
 
-interface OpenAiToolCall { id: string; type: 'function'; function: { name: string; arguments: string } }
+interface OpenAiToolCall {
+  id: string;
+  type: 'function';
+  function: { name: string; arguments: string };
+  // Provider extras that must be sent back unchanged, e.g. Gemini's extra_content.google.thought_signature.
+  [extra: string]: unknown;
+}
 
 async function streamOpenAiCompatible(
   cfg: ReturnType<typeof providerConfig>,
@@ -180,6 +186,9 @@ async function streamOpenAiCompatible(
         if (tc.id) call.id = tc.id;
         if (tc.function?.name) call.function.name += tc.function.name;
         if (tc.function?.arguments) call.function.arguments += tc.function.arguments;
+        for (const [key, value] of Object.entries(tc)) {
+          if (key !== 'index' && key !== 'id' && key !== 'type' && key !== 'function' && value != null) call[key] = value;
+        }
       }
     });
     const valid = calls.filter(Boolean).map((c, i) => ({ ...c, id: c.id || `call_${step}_${i}` }));
