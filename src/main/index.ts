@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, session, shell, type IpcMainInvokeEvent, type WebContents } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeTheme, session, shell, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import { join } from 'node:path';
 import type { ChatRequest, PermissionPrompt, ProviderId, Settings } from '../shared/types';
 import { PROVIDERS } from '../shared/types';
@@ -39,6 +39,13 @@ function askPermission(wc: WebContents, origin: string, permission: string) {
     pendingPrompts.set(id, finish);
     send('perm:prompt', { id, tabId, origin, permission } satisfies PermissionPrompt);
   });
+}
+
+// ---------- theme ----------
+
+/** With forced dark mode, websites that have their own dark theme are asked to use it. */
+function applyThemeSource() {
+  nativeTheme.themeSource = store.getSettings().forceDarkMode ? 'dark' : 'system';
 }
 
 // ---------- window ----------
@@ -197,7 +204,15 @@ function registerIpc() {
   });
 
   handle('settings:get', () => store.getSettings());
-  handle('settings:set', (patch: unknown) => store.updateSettings((patch ?? {}) as Partial<Settings>));
+  handle('settings:set', (patch: unknown) => {
+    const before = store.getSettings().forceDarkMode;
+    const next = store.updateSettings((patch ?? {}) as Partial<Settings>);
+    if (next.forceDarkMode !== before) {
+      applyThemeSource();
+      tabs?.refreshDarkMode();
+    }
+    return next;
+  });
   handle('secrets:status', () => store.secretsStatus());
   handle('secrets:set', (provider: unknown, key: unknown) => {
     if (!isProvider(provider)) return store.secretsStatus();
@@ -281,6 +296,7 @@ if (!app.requestSingleInstanceLock()) {
         send('toast', { text: state === 'completed' ? `Download fertig: ${item.getFilename()}` : `Download abgebrochen: ${item.getFilename()}` });
       });
     });
+    applyThemeSource();
     registerIpc();
     buildMenu();
     createWindow();

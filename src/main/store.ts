@@ -47,6 +47,7 @@ export const DEFAULT_SETTINGS: Settings = {
   searchEngine: 'duckduckgo',
   homeShowsBookmarks: true,
   accent: 'cyan',
+  forceDarkMode: false,
   httpsOnly: true,
   blockTrackers: true,
   blockThirdPartyCookies: true,

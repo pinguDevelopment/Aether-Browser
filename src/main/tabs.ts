@@ -1,5 +1,6 @@
 import { BrowserWindow, Menu, WebContentsView, clipboard, type Session, type WebContents } from 'electron';
 import type { InternalPage, TabError, TabState, TabsSnapshot } from '../shared/types';
+import { applyDarkMode, emulateDarkScheme, resetDarkMode } from './darkmode';
 import { upgradedHosts } from './security';
 import { addHistory, getSettings, updateHistoryTitle } from './store';
 
@@ -225,6 +226,16 @@ export class TabManager {
     return { title: tab.title, url: tab.url, text: String(text).slice(0, maxChars) };
   }
 
+  /** Re-apply (or remove) forced dark mode on every open page after the setting changed. */
+  refreshDarkMode() {
+    const enabled = getSettings().forceDarkMode;
+    for (const tab of this.tabs.values()) {
+      if (!tab.view) continue;
+      const wc = tab.view.webContents;
+      void emulateDarkScheme(wc, enabled).then(() => applyDarkMode(wc, enabled));
+    }
+  }
+
   destroyAll() {
     for (const tab of this.tabs.values()) this.destroyView(tab);
   }
@@ -323,6 +334,13 @@ export class TabManager {
       if (tab.id === this.activeId) this.layout();
     });
     wc.on('found-in-page', (_e, result) => this.send('find:result', { active: result.activeMatchOrdinal, total: result.matches }));
+    wc.on('did-start-navigation', (details) => {
+      if (details.isMainFrame && !details.isSameDocument) resetDarkMode(wc);
+    });
+    if (getSettings().forceDarkMode) void emulateDarkScheme(wc, true);
+    wc.on('dom-ready', () => void applyDarkMode(wc, getSettings().forceDarkMode));
+    // Late-styled pages: check once more after everything has loaded.
+    wc.on('did-finish-load', () => void applyDarkMode(wc, getSettings().forceDarkMode));
     wc.on('zoom-changed', (_e, dir) => this.setZoom(dir === 'in' ? 0.1 : -0.1));
 
     // Only web schemes are allowed to load inside a tab.

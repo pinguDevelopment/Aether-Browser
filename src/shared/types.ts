@@ -59,6 +59,7 @@ export interface Settings {
   searchEngine: SearchEngine;
   homeShowsBookmarks: boolean;
   accent: Accent;
+  forceDarkMode: boolean;
   // Privacy & security
   httpsOnly: boolean;
   blockTrackers: boolean;

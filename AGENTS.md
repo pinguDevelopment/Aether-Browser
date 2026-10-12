@@ -17,6 +17,7 @@ Vollständiger Desktop-Browser für macOS, Windows und Linux. Futuristisches, mo
 - **Tracker-Blocker**: `@ghostery/adblocker` `FiltersEngine` wird direkt in einem eigenen `onBeforeRequest` aufgerufen (nicht `enableBlockingInSession`), weil Electron pro Session nur einen Listener je webRequest-Event erlaubt und wir dort auch HTTPS-Upgrade und Cookie-Filter brauchen. Engine-Cache: `<userData>/adblock-engine.bin`.
 - Sprache der Oberfläche: **Deutsch**.
 - **Paketgröße**: Alle Laufzeit-Pakete stehen in `devDependencies`, weil esbuild sie in `dist/` bündelt; so landet kein `node_modules` im Installer (app.asar < 1 MB). Nur Locales `de` und `en-US`, Kompression `maximum`, DMG als `ULFO`. Der Rest (~90 MB pro Installer) ist Chromium selbst.
+- **Dark Mode erzwingen** (`src/main/darkmode.ts`, Einstellung `forceDarkMode`): Zuerst wird Seiten per DevTools-Protokoll `prefers-color-scheme: dark` gemeldet (nativeTheme allein erreicht Seiteninhalte nicht auf jedem System), damit Seiten mit eigenem Dark Theme dieses nutzen. Ist der Seitenhintergrund danach noch hell, wird per `insertCSS` invertiert; Bilder/Videos werden zurück-invertiert. Hinweis: `insertCSS` mit `cssOrigin: 'user'` lässt sich nicht wieder entfernen, daher Author-Origin.
 - **macOS-Signatur**: ad-hoc (`identity: "-"`), da noch kein Apple-Zertifikat. Ohne Signatur meldet Apple Silicon „beschädigt“. CI prüft die Signatur mit `codesign --verify`.
 
 ## Stand (v0.1.0)
@@ -28,6 +29,7 @@ Erledigt:
 - Sicherheit: Sandbox überall, IPC-Absenderprüfung, Nur-HTTPS mit Warnseite, Tracker-/Werbeblocker, Drittanbieter-Cookies blockiert, DNT/GPC, Berechtigungsabfragen mit Merken, Pop-up-Blocker, Daten beim Beenden löschen, Electron-Fuses
 - AI-Chat in Seitenleiste und als Tab, Anbieterwahl Cloud/lokal, Modellliste laden, Seitenkontext, „Mit AI erklären“, „Seite zusammenfassen“
 - Einstellungsseite für alles oben
+- Dark Mode für alle Webseiten erzwingen (Einstellungen → Allgemein), sofort umschaltbar
 - Linux-Build (AppImage, .deb) lokal gebaut und gestartet; CI-Workflow für alle drei Systeme
 
 Getestet (Linux, Xvfb, Playwright): Startseite, Navigation, Tracker-Zähler, Berechtigungsleiste, Link in neuem Tab, HTTPS-Fehlerseite, Einstellungen, AI-Chat mit einem lokalen Mock-Server (OpenAI-kompatibel). Der Anthropic-Pfad ist typgeprüft, aber nicht gegen die echte API getestet (kein Key in der Testumgebung).

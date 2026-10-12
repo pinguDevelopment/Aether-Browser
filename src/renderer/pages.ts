@@ -158,6 +158,7 @@ export async function settingsPage(ctx: PageCtx, section = 'general'): Promise<H
       select('Akzentfarbe', 'Farbe für Leuchteffekte und Hervorhebungen.', s.accent, [
         ['cyan', 'Cyan'], ['violet', 'Violett'], ['lime', 'Neon-Grün'], ['magenta', 'Magenta'],
       ], (v) => set({ accent: v })),
+      toggle('Dark Mode für alle Webseiten erzwingen', 'Seiten mit eigenem dunklen Design nutzen dieses. Helle Seiten werden umgefärbt, Bilder und Videos behalten ihre Farben.', s.forceDarkMode, (v) => set({ forceDarkMode: v })),
       toggle('Lesezeichen auf der Startseite', 'Zeigt deine Lesezeichen als Kacheln im neuen Tab.', s.homeShowsBookmarks, (v) => set({ homeShowsBookmarks: v })),
     )],
     ['privacy', 'Datenschutz & Sicherheit', 'shield', async () => h('div', {},

@@ -15,6 +15,7 @@ Ein schneller, sicherheitsbewusster Desktop-Browser für **macOS, Windows und Li
   - Lokal: Ollama, LM Studio
   - „Seite einbeziehen“: Der Text der aktuellen Seite wird als Kontext mitgeschickt
   - Rechtsklick auf markierten Text: „Mit AI erklären“, Rechtsklick auf die Seite: „Seite mit AI zusammenfassen“
+- **Dark Mode für alle Webseiten** (abschaltbar): nutzt das eigene dunkle Design einer Seite, sonst wird sie lesbar umgefärbt, Bilder behalten ihre Farben
 - **Einstellungen**: Suchmaschine, Akzentfarbe, Datenschutz, Website-Berechtigungen, AI-Anbieter und API-Keys
 
 ## Sicherheit
