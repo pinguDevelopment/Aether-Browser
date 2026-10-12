@@ -25,8 +25,17 @@ jobs:
       - name: Package
         run: npm run dist -- --publish never
         env:
-          # Unsigned builds until signing certificates are configured.
+          # No Apple/Windows certificates yet: macOS gets an ad-hoc signature (identity "-"),
+          # which Apple Silicon requires; otherwise macOS reports the app as "damaged".
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Verify macOS signature
+        if: runner.os == 'macOS'
+        run: |
+          for app in release/mac*/Aether.app; do
+            echo "Checking $app"
+            codesign --verify --deep --strict --verbose=2 "$app"
+            codesign -dv "$app" 2>&1 | grep -E 'Signature|Identifier|Format'
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: aether-${{ matrix.os }}
