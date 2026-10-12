@@ -1,0 +1,99 @@
+{
+  "name": "aether-browser",
+  "productName": "Aether",
+  "version": "0.1.0",
+  "description": "Aether – ein schneller, sicherheitsbewusster Desktop-Browser mit eingebautem AI-Chat.",
+  "main": "dist/main/index.js",
+  "author": {
+    "name": "pinguDevelopment",
+    "email": "noreply@github.com"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "start": "npm run build && electron .",
+    "dev": "node scripts/build.mjs --watch",
+    "dist": "node scripts/build.mjs --prod && electron-builder",
+    "dist:linux": "node scripts/build.mjs --prod && electron-builder --linux",
+    "dist:win": "node scripts/build.mjs --prod && electron-builder --win",
+    "dist:mac": "node scripts/build.mjs --prod && electron-builder --mac"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
+    "@ghostery/adblocker": "^2.20.1",
+    "@ghostery/adblocker-electron": "^2.20.1",
+    "tldts": "^7.4.18"
+  },
+  "build": {
+    "appId": "dev.pingu.aether",
+    "productName": "Aether",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.png"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Network",
+      "icon": "build/icon.png",
+      "maintainer": "pinguDevelopment"
+    },
+    "protocols": [
+      {
+        "name": "Web",
+        "schemes": [
+          "http",
+          "https"
+        ]
+      }
+    ],
+    "publish": null
+  },
+  "homepage": "https://github.com/pinguDevelopment/WebBrowser",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pinguDevelopment/WebBrowser.git"
+  }
+}

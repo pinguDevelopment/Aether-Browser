@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https: data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'" />
+  <title>Aether</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="titlebar">
+      <div class="window-spacer left"></div>
+      <div id="tabstrip"></div>
+      <button id="newtab-btn" class="icon-btn" title="Neuer Tab (Strg+T)"></button>
+      <div class="drag-fill"></div>
+      <div class="window-spacer right"></div>
+    </header>
+
+    <nav id="toolbar">
+      <button id="back-btn" class="icon-btn" title="Zurück"></button>
+      <button id="forward-btn" class="icon-btn" title="Vorwärts"></button>
+      <button id="reload-btn" class="icon-btn" title="Neu laden"></button>
+      <div id="omnibox">
+        <span id="site-icon"></span>
+        <input id="address" spellcheck="false" autocomplete="off" placeholder="Suchen oder Adresse eingeben" />
+        <span id="zoom-badge" class="chip small" hidden></span>
+        <span id="shield-badge" class="chip small" title="Blockierte Tracker auf dieser Seite"></span>
+        <button id="star-btn" class="icon-btn small" title="Lesezeichen (Strg+D)"></button>
+        <div id="load-bar"></div>
+      </div>
+      <button id="bookmarks-btn" class="icon-btn" title="Lesezeichen"></button>
+      <button id="history-btn" class="icon-btn" title="Verlauf (Strg+Y)"></button>
+      <button id="ai-btn" class="icon-btn accent" title="AI-Seitenleiste (Strg+Umschalt+A)"></button>
+      <button id="settings-btn" class="icon-btn" title="Einstellungen"></button>
+    </nav>
+
+    <div id="permbar" class="bar" hidden></div>
+    <div id="findbar" class="bar" hidden></div>
+
+    <main id="content">
+      <section id="stage">
+        <div id="viewport"></div>
+        <div id="internal"></div>
+        <div id="errorpage" hidden></div>
+      </section>
+      <aside id="sidebar" hidden></aside>
+    </main>
+    <div id="toasts"></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
