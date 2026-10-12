@@ -1,7 +1,7 @@
 {
   "name": "aether-browser",
   "productName": "Aether Browser",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Aether Browser – ein schneller, sicherheitsbewusster Desktop-Browser mit eingebautem AI-Chat.",
   "main": "dist/main/index.js",
   "author": {

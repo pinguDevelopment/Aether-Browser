@@ -260,7 +260,7 @@ body[data-platform="darwin"] #toasts { right: 12px; }
 .composer-options { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .chat.agent-on .agent-toggle { color: var(--accent); }
 .tool-steps { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed var(--border); }
-.tool-step { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-2); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tool-step { display: flex; align-items: flex-start; gap: 6px; font-size: 11.5px; color: var(--text-2); font-family: var(--mono); overflow-wrap: anywhere; }
 .tool-step .icon { width: 12px; height: 12px; color: var(--accent); flex: none; }
 .tool-steps:empty { display: none; }
 

@@ -11,9 +11,15 @@ const FALLBACK_MODELS = new Set(['claude-fable-5-1', 'claude-opus-5-5', 'claude-
 
 const running = new Map<string, AbortController>();
 const MAX_AGENT_STEPS = 25;
+const REVOKED_RESULT =
+  'Der Nutzer hat dem Agenten gerade die Berechtigung entzogen. Diese Aktion wurde nicht ausgeführt. ' +
+  'Führe keine Browser-Aktionen mehr aus und antworte nur noch mit Text.';
+const STOPPED_NOTE = '\n\n_(Agent gestoppt: Die Berechtigung wurde entzogen.)_';
 
 /** Runs browser tools for the model and reports each step to the chat. */
 interface ToolRunner {
+  /** Set once the user unticks the agent box during a run; stays set for the rest of the run. */
+  revoked: boolean;
   run(name: string, input: Record<string, unknown>): Promise<{ content: string; isError: boolean }>;
 }
 
@@ -58,7 +64,14 @@ export async function streamChat(
   const cfg = providerConfig(providerId);
   const onText = (text: string) => emit({ requestId, type: 'delta', text });
   const tools: ToolRunner | undefined = agent && {
+    revoked: false,
     async run(name, input) {
+      // Checked again before every action, so unticking the box stops the agent between steps.
+      if (this.revoked || !getSettings().aiAgentMode) {
+        if (!this.revoked) emit({ requestId, type: 'tool', label: 'Berechtigung entzogen, Agent stoppt' });
+        this.revoked = true;
+        return { content: REVOKED_RESULT, isError: true };
+      }
       emit({ requestId, type: 'tool', label: agent.describe(name, input) });
       try {
         return { content: await agent.run(name, input), isError: false };
@@ -99,6 +112,8 @@ async function streamAnthropic(
     : undefined;
 
   for (let step = 0; step < MAX_AGENT_STEPS; step++) {
+    // After a revocation the model gets one more turn to answer in text, nothing more.
+    const lastChance = !!tools?.revoked;
     const params = {
       model: cfg.model,
       max_tokens: 16000,
@@ -122,6 +137,7 @@ async function streamAnthropic(
     if (final.stop_reason === 'max_tokens') return onText('\n\n_(Antwort wegen Längenlimit gekürzt.)_');
     const calls = final.content.filter((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use');
     if (!tools || final.stop_reason !== 'tool_use' || calls.length === 0) return;
+    if (lastChance) return onText(STOPPED_NOTE);
 
     // The assistant turn goes back unchanged, followed by one user turn with all tool results.
     history.push({ role: 'assistant', content: final.content as Anthropic.ContentBlockParam[] });
@@ -161,6 +177,7 @@ async function streamOpenAiCompatible(
     : undefined;
 
   for (let step = 0; step < MAX_AGENT_STEPS; step++) {
+    const lastChance = !!tools?.revoked;
     const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
       method: 'POST',
       headers,
@@ -193,6 +210,7 @@ async function streamOpenAiCompatible(
     });
     const valid = calls.filter(Boolean).map((c, i) => ({ ...c, id: c.id || `call_${step}_${i}` }));
     if (!tools || valid.length === 0) return;
+    if (lastChance) return onText(STOPPED_NOTE);
 
     history.push({ role: 'assistant', content: text || null, tool_calls: valid });
     for (const call of valid) {
