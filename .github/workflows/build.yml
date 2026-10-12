@@ -6,6 +6,11 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'GitHub-Release für die Version aus package.json erstellen'
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -65,13 +70,15 @@ jobs:
           if-no-files-found: error
 
   release:
-    # Push a tag like v0.1.0 to publish a GitHub release with all installers.
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Publish a GitHub release with all installers: push a tag like v0.1.0,
+    # or run the workflow manually with "release" checked (tag = version from package.json).
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: installers
@@ -95,7 +102,9 @@ jobs:
           - **macOS:** beim ersten Start *Systemeinstellungen → Datenschutz & Sicherheit → Dennoch öffnen*. Alternativ im Terminal: `xattr -cr "/Applications/Aether Browser.app"`
           - **Linux (AppImage):** Datei ausführbar machen (`chmod +x`) und starten.
           NOTES
-          gh release create "$GITHUB_REF_NAME" installers/* \
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then TAG="$GITHUB_REF_NAME"; else TAG="v$(node -p "require('./package.json').version")"; fi
+          gh release create "$TAG" installers/* \
             --repo "$GITHUB_REPOSITORY" \
-            --title "Aether Browser ${GITHUB_REF_NAME}" \
+            --target "$GITHUB_SHA" \
+            --title "Aether Browser $TAG" \
             --notes-file notes.md
