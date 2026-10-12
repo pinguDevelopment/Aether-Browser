@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { ChatEvent, ChatMessage, ProviderId } from '../shared/types';
 import { PROVIDERS } from '../shared/types';
 import { getApiKey, getSettings } from './store';
+import { AGENT_SYSTEM_PROMPT, AGENT_TOOLS, type BrowserAgent } from './agent';
 
 export interface PageContext { title: string; url: string; text: string }
 
@@ -9,6 +10,12 @@ export interface PageContext { title: string; url: string; text: string }
 const FALLBACK_MODELS = new Set(['claude-fable-5-1', 'claude-opus-5-5', 'claude-opus-5', 'claude-sonnet-5-5']);
 
 const running = new Map<string, AbortController>();
+const MAX_AGENT_STEPS = 25;
+
+/** Runs browser tools for the model and reports each step to the chat. */
+interface ToolRunner {
+  run(name: string, input: Record<string, unknown>): Promise<{ content: string; isError: boolean }>;
+}
 
 function providerConfig(id: ProviderId) {
   const s = getSettings();
@@ -21,8 +28,9 @@ function providerConfig(id: ProviderId) {
   };
 }
 
-function buildSystem(page?: PageContext): string {
+function buildSystem(page?: PageContext, agentMode = false): string {
   let system = getSettings().aiSystemPrompt;
+  if (agentMode) system += '\n\n' + AGENT_SYSTEM_PROMPT;
   if (page) {
     // Page text is untrusted: it is framed as data so instructions inside it are not followed.
     system +=
@@ -42,19 +50,31 @@ export async function streamChat(
   messages: ChatMessage[],
   page: PageContext | undefined,
   emit: (e: ChatEvent) => void,
+  agent?: BrowserAgent,
 ) {
   const controller = new AbortController();
   running.set(requestId, controller);
   const providerId = getSettings().aiProvider;
   const cfg = providerConfig(providerId);
+  const onText = (text: string) => emit({ requestId, type: 'delta', text });
+  const tools: ToolRunner | undefined = agent && {
+    async run(name, input) {
+      emit({ requestId, type: 'tool', label: agent.describe(name, input) });
+      try {
+        return { content: await agent.run(name, input), isError: false };
+      } catch (err) {
+        return { content: err instanceof Error ? err.message : String(err), isError: true };
+      }
+    },
+  };
   try {
     if (cfg.info.needsKey && !cfg.apiKey) {
       throw new Error(`Für ${cfg.info.label} ist noch kein API-Key hinterlegt. Trage ihn unter Einstellungen → AI ein.`);
     }
     if (!cfg.model) throw new Error('Kein Modell ausgewählt. Lege es unter Einstellungen → AI fest.');
-    const system = buildSystem(page);
-    if (providerId === 'anthropic') await streamAnthropic(cfg, system, messages, controller.signal, (text) => emit({ requestId, type: 'delta', text }));
-    else await streamOpenAiCompatible(cfg, system, messages, controller.signal, (text) => emit({ requestId, type: 'delta', text }));
+    const system = buildSystem(page, !!tools);
+    if (providerId === 'anthropic') await streamAnthropic(cfg, system, messages, controller.signal, onText, tools);
+    else await streamOpenAiCompatible(cfg, system, messages, controller.signal, onText, tools);
     emit({ requestId, type: 'done' });
   } catch (err) {
     if (controller.signal.aborted) emit({ requestId, type: 'done' });
@@ -70,29 +90,54 @@ async function streamAnthropic(
   messages: ChatMessage[],
   signal: AbortSignal,
   onText: (t: string) => void,
+  tools?: ToolRunner,
 ) {
   const client = new Anthropic({ apiKey: cfg.apiKey, baseURL: cfg.baseUrl });
-  const params = {
-    model: cfg.model,
-    max_tokens: 16000,
-    system,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
-  };
-  // Supported models get the server-side fallback, so a safety refusal is retried on a fallback model instead of failing.
-  const stream = FALLBACK_MODELS.has(cfg.model)
-    ? client.beta.messages.stream(
-        { ...params, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' } as Parameters<typeof client.beta.messages.stream>[0],
-        { signal },
-      )
-    : client.messages.stream(params, { signal });
+  const history: Anthropic.MessageParam[] = messages.map((m) => ({ role: m.role, content: m.content }));
+  const toolDefs: Anthropic.Tool[] | undefined = tools
+    ? AGENT_TOOLS.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters }))
+    : undefined;
 
-  for await (const event of stream) {
-    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') onText(event.delta.text);
+  for (let step = 0; step < MAX_AGENT_STEPS; step++) {
+    const params = {
+      model: cfg.model,
+      max_tokens: 16000,
+      system,
+      messages: history,
+      ...(toolDefs ? { tools: toolDefs } : {}),
+    };
+    // Supported models get the server-side fallback, so a safety refusal is retried on a fallback model instead of failing.
+    const stream = FALLBACK_MODELS.has(cfg.model)
+      ? client.beta.messages.stream(
+          { ...params, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' } as Parameters<typeof client.beta.messages.stream>[0],
+          { signal },
+        )
+      : client.messages.stream(params, { signal });
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') onText(event.delta.text);
+    }
+    const final = (await stream.finalMessage()) as Anthropic.Message;
+    if (final.stop_reason === 'refusal') return onText('\n\n_(Die Anfrage wurde vom Modell abgelehnt.)_');
+    if (final.stop_reason === 'max_tokens') return onText('\n\n_(Antwort wegen Längenlimit gekürzt.)_');
+    const calls = final.content.filter((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use');
+    if (!tools || final.stop_reason !== 'tool_use' || calls.length === 0) return;
+
+    // The assistant turn goes back unchanged, followed by one user turn with all tool results.
+    history.push({ role: 'assistant', content: final.content as Anthropic.ContentBlockParam[] });
+    const results: Anthropic.ToolResultBlockParam[] = [];
+    for (const call of calls) {
+      if (signal.aborted) return;
+      const r = await tools.run(call.name, (call.input ?? {}) as Record<string, unknown>);
+      results.push({ type: 'tool_result', tool_use_id: call.id, content: r.content, ...(r.isError ? { is_error: true } : {}) });
+    }
+    history.push({ role: 'user', content: results });
+    onText('\n\n');
   }
-  const final = await stream.finalMessage();
-  if (final.stop_reason === 'refusal') onText('\n\n_(Die Anfrage wurde vom Modell abgelehnt.)_');
-  if (final.stop_reason === 'max_tokens') onText('\n\n_(Antwort wegen Längenlimit gekürzt.)_');
+  onText('\n\n_(Agent nach zu vielen Schritten angehalten.)_');
 }
+
+interface OpenAiToolCall { id: string; type: 'function'; function: { name: string; arguments: string } }
 
 async function streamOpenAiCompatible(
   cfg: ReturnType<typeof providerConfig>,
@@ -100,29 +145,72 @@ async function streamOpenAiCompatible(
   messages: ChatMessage[],
   signal: AbortSignal,
   onText: (t: string) => void,
+  tools?: ToolRunner,
 ) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (cfg.apiKey) headers.Authorization = `Bearer ${cfg.apiKey}`;
-  const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers,
-    signal,
-    body: JSON.stringify({
-      model: cfg.model,
-      stream: true,
-      messages: [{ role: 'system', content: system }, ...messages],
-    }),
-  });
-  if (!res.ok || !res.body) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`HTTP ${res.status}: ${extractErrorMessage(body)}`);
+  const history: Record<string, unknown>[] = [{ role: 'system', content: system }, ...messages];
+  const toolDefs = tools
+    ? AGENT_TOOLS.map((t) => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.parameters } }))
+    : undefined;
+
+  for (let step = 0; step < MAX_AGENT_STEPS; step++) {
+    const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers,
+      signal,
+      body: JSON.stringify({ model: cfg.model, stream: true, messages: history, ...(toolDefs ? { tools: toolDefs } : {}) }),
+    });
+    if (!res.ok || !res.body) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status}: ${extractErrorMessage(body)}`);
+    }
+    let text = '';
+    const calls: OpenAiToolCall[] = [];
+    await readSse(res.body, (json) => {
+      const delta = json.choices?.[0]?.delta;
+      if (typeof delta?.content === 'string' && delta.content) {
+        text += delta.content;
+        onText(delta.content);
+      }
+      // Tool calls arrive in pieces, keyed by index.
+      for (const tc of delta?.tool_calls ?? []) {
+        const i = typeof tc.index === 'number' ? tc.index : calls.length;
+        const call = (calls[i] ??= { id: '', type: 'function', function: { name: '', arguments: '' } });
+        if (tc.id) call.id = tc.id;
+        if (tc.function?.name) call.function.name += tc.function.name;
+        if (tc.function?.arguments) call.function.arguments += tc.function.arguments;
+      }
+    });
+    const valid = calls.filter(Boolean).map((c, i) => ({ ...c, id: c.id || `call_${step}_${i}` }));
+    if (!tools || valid.length === 0) return;
+
+    history.push({ role: 'assistant', content: text || null, tool_calls: valid });
+    for (const call of valid) {
+      if (signal.aborted) return;
+      let input: Record<string, unknown> = {};
+      try {
+        input = call.function.arguments ? JSON.parse(call.function.arguments) : {};
+      } catch {
+        history.push({ role: 'tool', tool_call_id: call.id, content: 'Fehler: Argumente sind kein gültiges JSON.' });
+        continue;
+      }
+      const r = await tools.run(call.function.name, input);
+      history.push({ role: 'tool', tool_call_id: call.id, content: r.isError ? `Fehler: ${r.content}` : r.content });
+    }
+    if (text) onText('\n\n');
   }
-  const reader = res.body.getReader();
+  onText('\n\n_(Agent nach zu vielen Schritten angehalten.)_');
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function readSse(body: ReadableStream<Uint8Array>, onJson: (json: any) => void) {
+  const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
   for (;;) {
     const { value, done } = await reader.read();
-    if (done) break;
+    if (done) return;
     buffer += decoder.decode(value, { stream: true });
     let nl: number;
     while ((nl = buffer.indexOf('\n')) >= 0) {
@@ -132,9 +220,7 @@ async function streamOpenAiCompatible(
       const data = line.slice(5).trim();
       if (data === '[DONE]') return;
       try {
-        const json = JSON.parse(data);
-        const text = json.choices?.[0]?.delta?.content;
-        if (typeof text === 'string' && text) onText(text);
+        onJson(JSON.parse(data));
       } catch {
         /* ignore keep-alive or partial lines */
       }

@@ -1,4 +1,4 @@
-import type { Bookmark, HistoryEntry, PermissionPrompt, Settings, TabState, TabsSnapshot } from '../shared/types';
+import type { Bookmark, HistoryEntry, PermissionPrompt, Settings, TabState, TabsSnapshot, UpdateStatus } from '../shared/types';
 import { ChatPanel } from './chat';
 import { $, api, faviconEl, h, hostOf, toast } from './dom';
 import { icon } from './icons';
@@ -195,6 +195,24 @@ $('#history-btn').onclick = () => openInternal('history');
 $('#ai-btn').append(icon('spark'));
 $('#ai-btn').onclick = () => toggleSidebar();
 $('#settings-btn').append(icon('settings'));
+
+// Update pill: appears when a new release is available and installs it on click.
+const updateBtn = $('#update-btn') as HTMLButtonElement;
+function renderUpdate(u: UpdateStatus) {
+  const show = ['available', 'downloading', 'installing'].includes(u.state);
+  updateBtn.hidden = !show;
+  if (!show) return;
+  const label = u.state === 'available' ? `Update ${u.version}` : u.state === 'downloading' ? `${u.percent ?? 0} %` : 'Installiere …';
+  updateBtn.disabled = u.state !== 'available';
+  updateBtn.replaceChildren(icon('download'), h('span', { text: label }));
+}
+updateBtn.onclick = () => void api.update.install();
+api.on('update:status', (p) => {
+  const u = p as UpdateStatus;
+  renderUpdate(u);
+  if (u.state === 'manual' && u.message) toast(u.message);
+});
+void api.update.status().then((u) => renderUpdate(u as UpdateStatus));
 $('#settings-btn').onclick = () => openInternal('settings');
 
 /** Reuse an existing tab of that internal page, otherwise open a new one. */
@@ -253,7 +271,7 @@ async function renderStage() {
     case 'history': page = await historyPage(ctx); break;
     case 'bookmarks': page = await bookmarksPage(ctx); break;
     case 'ai':
-      pageChat ??= new ChatPanel('page', () => settings, () => openInternal('settings'));
+      pageChat ??= new ChatPanel('page', () => settings, () => openInternal('settings'), saveSettings);
       page = h('div', { class: 'page ai-page' }, pageChat.el);
       requestAnimationFrame(() => pageChat?.focus());
       break;
@@ -270,7 +288,7 @@ let sidebarChat: ChatPanel | undefined;
 function toggleSidebar(force?: boolean) {
   const open = force ?? els.sidebar.hidden === true;
   if (open && !sidebarChat) {
-    sidebarChat = new ChatPanel('sidebar', () => settings, () => openInternal('settings'));
+    sidebarChat = new ChatPanel('sidebar', () => settings, () => openInternal('settings'), saveSettings);
     els.sidebar.append(
       h('div', { class: 'sidebar-actions' },
         h('button', { class: 'icon-btn small', title: 'Als Tab öffnen', onclick: () => openInternal('ai') }, icon('sidebar')),

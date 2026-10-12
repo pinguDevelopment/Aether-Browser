@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 // Only these channels may be listened to from the UI.
-const EVENTS = new Set(['tabs:update', 'find:result', 'toast', 'ai:ask', 'ai:summarize', 'ai:event', 'perm:prompt', 'perm:close', 'cmd']);
+const EVENTS = new Set(['tabs:update', 'find:result', 'toast', 'ai:ask', 'ai:summarize', 'ai:event', 'perm:prompt', 'perm:close', 'cmd', 'update:status']);
 
 const call = (channel: string) => (...args: unknown[]) => ipcRenderer.invoke(channel, ...args);
 
@@ -31,6 +31,7 @@ const api = {
   bookmarks: { get: call('bookmarks:get'), toggle: call('bookmarks:toggle'), remove: call('bookmarks:remove') },
   perms: { list: call('perms:list'), set: call('perms:set'), answer: call('perm:answer') },
   data: { clear: call('data:clear') },
+  update: { status: call('update:status'), check: call('update:check'), install: call('update:install') },
   ai: { chat: call('ai:chat'), cancel: call('ai:cancel'), models: call('ai:models'), activePage: call('ai:activePage') },
   on(channel: string, cb: (payload: unknown) => void) {
     if (!EVENTS.has(channel)) throw new Error(`Unknown channel ${channel}`);

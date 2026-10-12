@@ -255,3 +255,21 @@ body[data-platform="darwin"] #toasts { right: 12px; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---------- agent mode ---------- */
+.composer-options { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.chat.agent-on .agent-toggle { color: var(--accent); }
+.tool-steps { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed var(--border); }
+.tool-step { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-2); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tool-step .icon { width: 12px; height: 12px; color: var(--accent); flex: none; }
+.tool-steps:empty { display: none; }
+
+/* ---------- updates ---------- */
+.update-pill { color: #05060a; background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; font-weight: 600; cursor: pointer; }
+.update-pill .icon { width: 13px; height: 13px; }
+.update-pill:disabled { opacity: .8; cursor: default; }
+.btn:disabled { opacity: .55; cursor: default; box-shadow: none; }
+.update-card.error .setting-desc { color: var(--danger); }
+.update-progress { height: 4px; border-radius: 4px; background: var(--panel-2); margin-top: 8px; overflow: hidden; }
+.update-progress > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .2s; }
+.update-progress[hidden] { display: none; }

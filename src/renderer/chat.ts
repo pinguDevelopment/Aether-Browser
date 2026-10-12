@@ -18,13 +18,25 @@ export class ChatPanel {
   private sendBtn: HTMLButtonElement;
   private providerLabel: HTMLElement;
   private pageToggle: HTMLInputElement;
+  private agentToggle: HTMLInputElement;
+  private toolSteps?: HTMLElement;
   private messages: ChatMessage[] = [];
   private requestId?: string;
   private streamingEl?: HTMLElement;
   private streamingText = '';
 
-  constructor(private mode: 'sidebar' | 'page', private getSettings: () => Settings, openSettings: () => void) {
+  constructor(
+    private mode: 'sidebar' | 'page',
+    private getSettings: () => Settings,
+    openSettings: () => void,
+    saveSettings: (patch: Partial<Settings>) => Promise<void>,
+  ) {
     panels.add(this);
+    // Agent mode is off by default; the choice is saved and shared by every chat.
+    this.agentToggle = h('input', {
+      attrs: { type: 'checkbox' },
+      onchange: () => void saveSettings({ aiAgentMode: this.agentToggle.checked }),
+    });
     this.providerLabel = h('button', { class: 'chip provider', title: 'Anbieter in den Einstellungen ändern', onclick: openSettings });
     this.pageToggle = h('input', { attrs: { type: 'checkbox', checked: mode === 'sidebar' } });
     this.list = h('div', { class: 'chat-list' });
@@ -48,7 +60,11 @@ export class ChatPanel {
       ),
       this.list,
       h('div', { class: 'composer' },
-        h('label', { class: 'page-toggle', title: 'Text der aktuellen Seite als Kontext mitsenden' }, this.pageToggle, icon('page'), h('span', { text: 'Seite einbeziehen' })),
+        h('div', { class: 'composer-options' },
+          h('label', { class: 'page-toggle', title: 'Text der aktuellen Seite als Kontext mitsenden' }, this.pageToggle, icon('page'), h('span', { text: 'Seite einbeziehen' })),
+          h('label', { class: 'page-toggle agent-toggle', title: 'Die AI darf deine Tabs lesen, Seiten öffnen, klicken und tippen. Jeder Schritt wird im Chat angezeigt.' },
+            this.agentToggle, icon('cursor'), h('span', { text: 'Agent: Tabs & Browser steuern' })),
+        ),
         h('div', { class: 'composer-row' }, this.input, this.sendBtn),
       ),
     );
@@ -61,6 +77,8 @@ export class ChatPanel {
     const info = PROVIDERS.find((p) => p.id === s.aiProvider)!;
     this.providerLabel.replaceChildren(icon(info.kind === 'local' ? 'chip' : 'cloud'), h('span', { text: `${info.label.replace(/ \(.*\)/, '')} · ${s.aiModels[s.aiProvider] || '–'}` }));
     this.pageToggle.parentElement!.style.display = s.aiAllowPageContext ? '' : 'none';
+    this.agentToggle.checked = s.aiAgentMode;
+    this.el.classList.toggle('agent-on', s.aiAgentMode);
   }
 
   focus() {
@@ -131,6 +149,7 @@ export class ChatPanel {
     this.requestId = crypto.randomUUID();
     this.streamingText = '';
     this.streamingEl = this.bubble('assistant', '');
+    this.toolSteps = undefined;
     this.streamingEl.parentElement!.classList.add('streaming');
     this.sendBtn.replaceChildren(icon('stop'));
     this.sendBtn.title = 'Stoppen';
@@ -143,6 +162,16 @@ export class ChatPanel {
 
   handle(e: ChatEvent) {
     if (e.requestId !== this.requestId || !this.streamingEl) return;
+    if (e.type === 'tool') {
+      // Every agent action is listed above the answer, so the user can follow what the AI does.
+      if (!this.toolSteps) {
+        this.toolSteps = h('div', { class: 'tool-steps' });
+        this.streamingEl.before(this.toolSteps);
+      }
+      this.toolSteps.append(h('div', { class: 'tool-step' }, icon('cursor'), h('span', { text: e.label })));
+      this.list.scrollTop = this.list.scrollHeight;
+      return;
+    }
     if (e.type === 'delta') {
       this.streamingText += e.text;
       this.streamingEl.innerHTML = renderMarkdown(this.streamingText);
@@ -158,6 +187,8 @@ export class ChatPanel {
       this.messages.pop(); // drop the unanswered user turn so the next try starts clean
     } else if (this.streamingText) {
       this.messages.push({ role: 'assistant', content: this.streamingText });
+    } else if (this.toolSteps) {
+      this.messages.push({ role: 'assistant', content: '(Aktionen ausgeführt)' });
     } else {
       bubble.remove();
       this.messages.pop();

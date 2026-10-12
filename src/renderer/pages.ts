@@ -1,4 +1,4 @@
-import type { Bookmark, HistoryEntry, ProviderId, SecretsStatus, Settings } from '../shared/types';
+import type { Bookmark, HistoryEntry, ProviderId, SecretsStatus, Settings, UpdateStatus } from '../shared/types';
 import { PROVIDERS } from '../shared/types';
 import { api, faviconEl, h, hostOf, toast } from './dom';
 import { icon } from './icons';
@@ -202,7 +202,7 @@ export async function settingsPage(ctx: PageCtx, section = 'general'): Promise<H
     ['ai', 'AI-Assistent', 'spark', () => aiSettings(ctx)],
     ['about', 'Über Aether Browser', 'chip', async () => h('div', { class: 'about' },
       h('div', { class: 'brand big' }, h('span', { class: 'brand-mark' }), h('span', { text: 'AETHER' })),
-      h('p', { text: 'Version 0.1.0 · Prototyp' }),
+      await updateCard(),
       h('p', { class: 'muted', text: 'Jede Website läuft in einem eigenen, abgeschotteten Prozess (Chromium-Sandbox, Context Isolation, kein Node.js-Zugriff). API-Keys werden mit dem Schlüsselbund deines Betriebssystems verschlüsselt und verlassen nie den Hauptprozess.' }),
     )],
   ];
@@ -298,3 +298,42 @@ function field(label: string, control: HTMLElement, hint?: string) {
 }
 
 export type { ProviderId };
+
+// ---------- Updates ----------
+
+const UPDATE_TEXT: Record<UpdateStatus['state'], (u: UpdateStatus) => string> = {
+  idle: () => 'Noch nicht nach Updates gesucht.',
+  checking: () => 'Suche nach Updates …',
+  none: () => 'Du hast die neueste Version.',
+  available: (u) => `Version ${u.version} ist verfügbar.`,
+  downloading: (u) => `Lade Version ${u.version} herunter … ${u.percent ?? 0} %`,
+  installing: () => 'Installiere das Update, der Browser startet gleich neu …',
+  manual: (u) => u.message ?? 'Update heruntergeladen.',
+  error: (u) => `Update fehlgeschlagen: ${u.message ?? 'unbekannter Fehler'}`,
+};
+
+async function updateCard(): Promise<HTMLElement> {
+  const version = h('p', {});
+  const text = h('div', { class: 'setting-desc' });
+  const bar = h('div', { class: 'update-progress' }, h('div', {}));
+  const btn = h('button', { class: 'btn primary' });
+  const card = h('div', { class: 'setting update-card' },
+    h('div', { class: 'setting-text' }, h('div', { class: 'setting-label', text: 'Updates' }), text, bar),
+    btn,
+  );
+  const render = (u: UpdateStatus) => {
+    version.textContent = `Version ${u.current} · Prototyp`;
+    text.textContent = UPDATE_TEXT[u.state](u);
+    card.classList.toggle('error', u.state === 'error');
+    bar.hidden = u.state !== 'downloading';
+    (bar.firstChild as HTMLElement).style.width = `${u.percent ?? 0}%`;
+    const busy = u.state === 'checking' || u.state === 'downloading' || u.state === 'installing';
+    const install = u.state === 'available';
+    btn.disabled = busy;
+    btn.replaceChildren(icon(install ? 'download' : 'reload'), h('span', { text: install ? 'Jetzt installieren' : 'Nach Updates suchen' }));
+    btn.onclick = () => void (install ? api.update.install() : api.update.check());
+  };
+  render((await api.update.status()) as UpdateStatus);
+  const off = api.on('update:status', (p) => (card.isConnected ? render(p as UpdateStatus) : off()));
+  return h('div', {}, version, card);
+}

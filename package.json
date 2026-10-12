@@ -1,7 +1,7 @@
 {
   "name": "aether-browser",
   "productName": "Aether Browser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Aether Browser – ein schneller, sicherheitsbewusster Desktop-Browser mit eingebautem AI-Chat.",
   "main": "dist/main/index.js",
   "author": {
@@ -21,17 +21,17 @@
     "dist:mac": "node scripts/build.mjs --prod && electron-builder --mac"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
-    "electron": "^44.7.0",
-    "electron-builder": "^26.15.3",
-    "esbuild": "^0.28.2",
-    "typescript": "^7.0.2",
     "@anthropic-ai/sdk": "^0.133.0",
     "@ghostery/adblocker": "^2.20.1",
     "@ghostery/adblocker-electron": "^2.20.1",
-    "tldts": "^7.4.18"
+    "@types/node": "^26.6.5",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
+    "electron-updater": "^6.8.9",
+    "esbuild": "^0.28.2",
+    "tldts": "^7.4.18",
+    "typescript": "^7.0.2"
   },
-  "dependencies": {},
   "build": {
     "appId": "dev.pingu.aether",
     "productName": "Aether Browser",
@@ -97,7 +97,13 @@
         ]
       }
     ],
-    "publish": null,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "pinguDevelopment",
+        "repo": "Aether-Browser"
+      }
+    ],
     "dmg": {
       "sign": false,
       "format": "ULFO"

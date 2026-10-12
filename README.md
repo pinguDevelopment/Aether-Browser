@@ -2,7 +2,7 @@
 
 Ein schneller, sicherheitsbewusster Desktop-Browser für **macOS, Windows und Linux** mit futuristischem Design und eingebautem **AI-Chat**. Gebaut mit Electron (Chromium) und TypeScript.
 
-> Status: **Prototyp (v0.1.0)**
+> Status: **Prototyp (v0.2.0)**
 
 ## Funktionen
 
@@ -14,8 +14,10 @@ Ein schneller, sicherheitsbewusster Desktop-Browser für **macOS, Windows und Li
   - Cloud: Anthropic Claude, OpenAI, Google Gemini, eigener OpenAI-kompatibler Endpunkt
   - Lokal: Ollama, LM Studio
   - „Seite einbeziehen“: Der Text der aktuellen Seite wird als Kontext mitgeschickt
+  - **Agent-Modus** (Kästchen im Chat, standardmäßig aus): Die AI darf Tabs lesen, öffnen, wechseln und schließen, navigieren, klicken, tippen und scrollen. Jeder Schritt wird im Chat angezeigt; Einstellungen und API-Keys sind für den Agenten gesperrt.
   - Rechtsklick auf markierten Text: „Mit AI erklären“, Rechtsklick auf die Seite: „Seite mit AI zusammenfassen“
 - **Dark Mode für alle Webseiten** (abschaltbar): nutzt das eigene dunkle Design einer Seite, sonst wird sie lesbar umgefärbt, Bilder behalten ihre Farben
+- **Updates**: *Einstellungen → Über Aether Browser → Nach Updates suchen*, oder die Update-Pille in der Toolbar. Windows und Linux installieren neue Versionen selbst und starten neu. Auf macOS wird die neue `.dmg` geladen und geöffnet (automatisches Ersetzen braucht ein Apple-Entwicklerzertifikat).
 - **Einstellungen**: Suchmaschine, Akzentfarbe, Datenschutz, Website-Berechtigungen, AI-Anbieter und API-Keys
 
 ## Sicherheit
@@ -55,7 +57,7 @@ npm run dist:mac     # .dmg + .zip, auf macOS ausführen
 
 Die Ergebnisse landen in `release/`.
 
-**Release veröffentlichen:** Version in `package.json` anpassen, dann entweder einen Tag pushen (`git tag v0.2.0 && git push origin v0.2.0`) oder auf GitHub unter *Actions → Build → Run workflow* „release“ anhaken. GitHub Actions baut alle Installer und erstellt daraus automatisch ein Release.
+**Release veröffentlichen:** Version in `package.json` anpassen, dann entweder einen Tag pushen (`git tag v0.3.0 && git push origin v0.3.0`) oder auf GitHub unter *Actions → Build → Run workflow* „release“ anhaken. GitHub Actions baut alle Installer und erstellt daraus automatisch ein Release.
 
 Der GitHub-Actions-Workflow `.github/workflows/build.yml` baut bei jedem Push auf `main` automatisch für alle drei Systeme und stellt die Installer als Artefakte bereit. Die Builds sind noch **nicht signiert**; macOS und Windows zeigen beim ersten Start daher eine Warnung.
 

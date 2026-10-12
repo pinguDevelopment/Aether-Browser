@@ -6,6 +6,8 @@ import { cancelChat, listModels, streamChat } from './ai';
 import { clearBrowsingData, hardenUiSession, hardenWebSession, httpExceptions } from './security';
 import * as store from './store';
 import { TabManager } from './tabs';
+import { BrowserAgent } from './agent';
+import { checkForUpdates, getUpdateStatus, initUpdater, installUpdate } from './updater';
 
 // Sandbox every renderer process, including our own UI (unless explicitly started with --no-sandbox, e.g. in CI containers).
 if (!app.commandLine.hasSwitch('no-sandbox')) app.enableSandbox();
@@ -253,11 +255,16 @@ function registerIpc() {
       .map((m) => ({ role: m.role, content: str(m.content, 200_000) }));
     let page;
     if (r?.includePage && store.getSettings().aiAllowPageContext) page = await tabs?.pageText().catch(() => undefined);
-    void streamChat(requestId, messages, page, (e) => send('ai:event', e));
+    // Agent mode: the model may use browser tools (off by default, toggled in the chat).
+    const agent = store.getSettings().aiAgentMode && tabs ? new BrowserAgent(tabs) : undefined;
+    void streamChat(requestId, messages, page, (e) => send('ai:event', e), agent);
     return { pageTitle: page?.title };
   });
   handle('ai:cancel', (id: unknown) => cancelChat(str(id, 64)));
   handle('ai:models', async (provider: unknown) => (isProvider(provider) ? listModels(provider).catch(() => []) : []));
+  handle('update:status', () => getUpdateStatus());
+  handle('update:check', () => checkForUpdates());
+  handle('update:install', () => installUpdate());
   handle('ai:activePage', () => {
     const tab = tabs?.active();
     return tab?.kind === 'web' ? { title: tab.title, url: tab.url } : undefined;
@@ -297,9 +304,12 @@ if (!app.requestSingleInstanceLock()) {
       });
     });
     applyThemeSource();
+    initUpdater((st) => send('update:status', st));
     registerIpc();
     buildMenu();
     createWindow();
+    // Quiet check shortly after start, so an available update shows up in the toolbar.
+    if (app.isPackaged) setTimeout(() => void checkForUpdates(), 8000);
     app.on('activate', () => {
       if (!win) createWindow();
     });

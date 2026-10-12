@@ -49,12 +49,16 @@ jobs:
           path: |
             release/*.AppImage
             release/*.deb
+            release/latest-linux.yml
           if-no-files-found: error
       - if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: aether-windows
-          path: release/*.exe
+          path: |
+            release/*.exe
+            release/*.exe.blockmap
+            release/latest.yml
           if-no-files-found: error
       - if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
@@ -101,6 +105,8 @@ jobs:
           - **Windows:** bei „Der Computer wurde durch Windows geschützt“ auf *Weitere Informationen → Trotzdem ausführen* klicken.
           - **macOS:** beim ersten Start *Systemeinstellungen → Datenschutz & Sicherheit → Dennoch öffnen*. Alternativ im Terminal: `xattr -cr "/Applications/Aether Browser.app"`
           - **Linux (AppImage):** Datei ausführbar machen (`chmod +x`) und starten.
+
+          **Updates:** Ab Version 0.2.0 unter *Einstellungen → Über Aether Browser → Nach Updates suchen*. Windows und Linux installieren das Update selbst und starten neu; auf macOS wird die neue `.dmg` geladen und geöffnet.
           NOTES
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then TAG="$GITHUB_REF_NAME"; else TAG="v$(node -p "require('./package.json').version")"; fi
           gh release create "$TAG" installers/* \

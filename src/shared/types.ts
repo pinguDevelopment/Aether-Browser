@@ -75,6 +75,7 @@ export interface Settings {
   aiBaseUrls: Record<ProviderId, string>;
   aiSystemPrompt: string;
   aiAllowPageContext: boolean;
+  aiAgentMode: boolean;
 }
 
 export interface SecretsStatus {
@@ -113,7 +114,8 @@ export interface ChatRequest {
 export type ChatEvent =
   | { requestId: string; type: 'delta'; text: string }
   | { requestId: string; type: 'done' }
-  | { requestId: string; type: 'error'; message: string };
+  | { requestId: string; type: 'error'; message: string }
+  | { requestId: string; type: 'tool'; label: string };
 
 export interface PermissionPrompt {
   id: number;
@@ -126,3 +128,12 @@ export interface SiteInfo {
   origin: string;
   permissions: Record<string, 'allow' | 'deny'>;
 }
+
+export interface UpdateStatus {
+  state: 'idle' | 'checking' | 'none' | 'available' | 'downloading' | 'installing' | 'manual' | 'error';
+  current: string;
+  version?: string;
+  percent?: number;
+  message?: string;
+}
+

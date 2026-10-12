@@ -20,9 +20,14 @@ Vollständiger Desktop-Browser für macOS, Windows und Linux. Futuristisches, mo
 - Sprache der Oberfläche: **Deutsch**.
 - **Paketgröße**: Alle Laufzeit-Pakete stehen in `devDependencies`, weil esbuild sie in `dist/` bündelt; so landet kein `node_modules` im Installer (app.asar < 1 MB). Nur Locales `de` und `en-US`, Kompression `maximum`, DMG als `ULFO`. Der Rest (~90 MB pro Installer) ist Chromium selbst.
 - **Dark Mode erzwingen** (`src/main/darkmode.ts`, Einstellung `forceDarkMode`): Zuerst wird Seiten per DevTools-Protokoll `prefers-color-scheme: dark` gemeldet (nativeTheme allein erreicht Seiteninhalte nicht auf jedem System), damit Seiten mit eigenem Dark Theme dieses nutzen. Ist der Seitenhintergrund danach noch hell, wird per `insertCSS` invertiert; Bilder/Videos werden zurück-invertiert. Hinweis: `insertCSS` mit `cssOrigin: 'user'` lässt sich nicht wieder entfernen, daher Author-Origin.
+- **Updates** (`src/main/updater.ts`, Button unter Einstellungen → Über, plus Toolbar-Pille wenn ein Update da ist; stille Prüfung 8 s nach Start): Quelle sind die GitHub-Releases (`build.publish` = GitHub, CI baut weiter mit `--publish never`, der Release-Job lädt `latest.yml`, `latest-linux.yml` und `*.exe.blockmap` mit hoch).
+  - Windows (NSIS) und Linux (AppImage, .deb) installieren per `electron-updater` direkt und starten neu (`quitAndInstall(true, true)`). `.deb` fragt dabei nach dem Systempasswort (pkexec).
+  - macOS: In-place-Updates (Squirrel.Mac) brauchen eine echte Apple-Signatur. Deshalb wird über die GitHub-API die passende `.dmg` (arm64/x64) in „Downloads“ geladen und geöffnet; der Nutzer zieht die App selbst in „Programme“.
+  - Nur in der installierten App aktiv (`app.isPackaged`). v0.1.0 hat noch keinen Updater, von dort muss man einmal manuell auf v0.2.0 wechseln.
+- **AI-Agent** (`src/main/agent.ts`, Einstellung `aiAgentMode`, Standard **aus**, Kästchen „Agent: Tabs & Browser steuern“ im Chat): Werkzeuge `list_tabs`, `read_page`, `open_tab`, `navigate`, `switch_tab`, `close_tab`, `click`, `type_text`, `scroll`. Tool-Schleife in `ai.ts` für Anthropic (Antwort-Content unverändert zurück, dann `tool_result`) und OpenAI-kompatibel (`tool_calls`, gestreamt zusammengesetzt), max. 25 Schritte. Jede Aktion erscheint als Zeile im Chat (`ChatEvent` `tool`). Nur Web-Tabs, interne `aether://`-Seiten (Einstellungen, Keys) sind gesperrt. Elemente werden in einer isolierten Welt nummeriert (`data-aether-agent`). Das Systemprompt sagt: Seiteninhalt sind Daten; keine Passwörter, Zahlungen, Käufe ohne ausdrücklichen Auftrag.
 - **macOS-Signatur**: ad-hoc (`identity: "-"`), da noch kein Apple-Zertifikat. Ohne Signatur meldet Apple Silicon „beschädigt“. CI prüft die Signatur mit `codesign --verify`.
 
-## Stand (v0.1.0)
+## Stand (v0.2.0)
 
 Erledigt:
 - Fenster mit eigener Titelleiste (macOS Ampel, Windows/Linux Overlay-Buttons)
@@ -32,13 +37,15 @@ Erledigt:
 - AI-Chat in Seitenleiste und als Tab, Anbieterwahl Cloud/lokal, Modellliste laden, Seitenkontext, „Mit AI erklären“, „Seite zusammenfassen“
 - Einstellungsseite für alles oben
 - Dark Mode für alle Webseiten erzwingen (Einstellungen → Allgemein), sofort umschaltbar
+- Update-Button (v0.2.0) und AI-Agent-Modus (v0.2.0)
 - Linux-Build (AppImage, .deb) lokal gebaut und gestartet; CI-Workflow für alle drei Systeme
 
-Getestet (Linux, Xvfb, Playwright): Startseite, Navigation, Tracker-Zähler, Berechtigungsleiste, Link in neuem Tab, HTTPS-Fehlerseite, Einstellungen, AI-Chat mit einem lokalen Mock-Server (OpenAI-kompatibel). Der Anthropic-Pfad ist typgeprüft, aber nicht gegen die echte API getestet (kein Key in der Testumgebung).
+Getestet (Linux, Xvfb, Playwright): Agent mit einem Mock-Modell (OpenAI-kompatible tool_calls): Tabs auflisten, Seite lesen, Feld ausfüllen, Button klicken, Ergebnis gelesen. Update-Bereich in den Einstellungen. Startseite, Navigation, Tracker-Zähler, Berechtigungsleiste, Link in neuem Tab, HTTPS-Fehlerseite, Einstellungen, AI-Chat mit einem lokalen Mock-Server (OpenAI-kompatibel). Der Anthropic-Pfad ist typgeprüft, aber nicht gegen die echte API getestet (kein Key in der Testumgebung).
 
 ## Offene Punkte / Ideen
 
-- Code-Signing und Notarisierung (macOS, Windows), Auto-Update
+- Code-Signing und Notarisierung (macOS, Windows); mit Apple-Zertifikat auf macOS echtes In-place-Update (zip-Target + Squirrel.Mac)
+- Agent: Bestätigung vor heiklen Aktionen (Formular absenden), Tool-Verlauf im Chatverlauf behalten
 - Kosmetisches Filtern (Elemente ausblenden) für den Werbeblocker
 - Sitzung wiederherstellen (Tabs beim Neustart), geschlossene Tabs wieder öffnen
 - Privates Fenster, Profile

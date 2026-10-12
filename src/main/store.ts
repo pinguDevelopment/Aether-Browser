@@ -62,6 +62,7 @@ export const DEFAULT_SETTINGS: Settings = {
   aiSystemPrompt:
     'Du bist Aether, ein hilfreicher Assistent, der in einen Webbrowser eingebaut ist. Antworte präzise und in der Sprache des Nutzers.',
   aiAllowPageContext: true,
+  aiAgentMode: false,
 };
 
 // ---------- Settings ----------
