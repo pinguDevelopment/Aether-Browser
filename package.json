@@ -109,9 +109,9 @@
     ],
     "artifactName": "Aether-Browser-${version}-${os}-${arch}.${ext}"
   },
-  "homepage": "https://github.com/pinguDevelopment/AetherBrowser",
+  "homepage": "https://github.com/pinguDevelopment/Aether-Browser",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pinguDevelopment/AetherBrowser.git"
+    "url": "https://github.com/pinguDevelopment/Aether-Browser.git"
   }
 }
