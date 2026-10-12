@@ -36,13 +36,32 @@ jobs:
             codesign --verify --deep --strict --verbose=2 "$app"
             codesign -dv "$app" 2>&1 | grep -E 'Signature|Identifier|Format'
           done
-      - uses: actions/upload-artifact@v4
+      # One download per platform/architecture, so nobody has to fetch installers they don't need.
+      - if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
         with:
-          name: aether-${{ matrix.os }}
+          name: aether-linux
           path: |
             release/*.AppImage
             release/*.deb
-            release/*.exe
+          if-no-files-found: error
+      - if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: aether-windows
+          path: release/*.exe
+          if-no-files-found: error
+      - if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: aether-mac-apple-silicon
+          path: release/*-arm64.dmg
+          if-no-files-found: error
+      - if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: aether-mac-intel
+          path: |
             release/*.dmg
-            release/*.zip
+            !release/*-arm64.dmg
           if-no-files-found: error

@@ -16,6 +16,8 @@ Vollständiger Desktop-Browser für macOS, Windows und Linux. Futuristisches, mo
 - **API-Keys** nur im Hauptprozess, verschlüsselt mit `safeStorage`. Die UI sieht nur, *ob* ein Key existiert.
 - **Tracker-Blocker**: `@ghostery/adblocker` `FiltersEngine` wird direkt in einem eigenen `onBeforeRequest` aufgerufen (nicht `enableBlockingInSession`), weil Electron pro Session nur einen Listener je webRequest-Event erlaubt und wir dort auch HTTPS-Upgrade und Cookie-Filter brauchen. Engine-Cache: `<userData>/adblock-engine.bin`.
 - Sprache der Oberfläche: **Deutsch**.
+- **Paketgröße**: Alle Laufzeit-Pakete stehen in `devDependencies`, weil esbuild sie in `dist/` bündelt; so landet kein `node_modules` im Installer (app.asar < 1 MB). Nur Locales `de` und `en-US`, Kompression `maximum`, DMG als `ULFO`. Der Rest (~90 MB pro Installer) ist Chromium selbst.
+- **macOS-Signatur**: ad-hoc (`identity: "-"`), da noch kein Apple-Zertifikat. Ohne Signatur meldet Apple Silicon „beschädigt“. CI prüft die Signatur mit `codesign --verify`.
 
 ## Stand (v0.1.0)
 
