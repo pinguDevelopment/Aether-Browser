@@ -55,7 +55,9 @@ npm run dist:mac     # .dmg + .zip, auf macOS ausführen
 
 Die Ergebnisse landen in `release/`.
 
-**Release veröffentlichen:** Version in `package.json` anpassen, dann entweder einen Tag pushen (`git tag v0.2.0 && git push origin v0.2.0`) oder auf GitHub unter *Actions → Build → Run workflow* „release“ anhaken. GitHub Actions baut alle Installer und erstellt daraus automatisch ein Release. Der GitHub-Actions-Workflow `.github/workflows/build.yml` baut bei jedem Push auf `main` automatisch für alle drei Systeme und stellt die Installer als Artefakte bereit. Die Builds sind noch **nicht signiert**; macOS und Windows zeigen beim ersten Start daher eine Warnung.
+**Release veröffentlichen:** Version in `package.json` anpassen, dann entweder einen Tag pushen (`git tag v0.2.0 && git push origin v0.2.0`) oder auf GitHub unter *Actions → Build → Run workflow* „release“ anhaken. GitHub Actions baut alle Installer und erstellt daraus automatisch ein Release.
+
+Der GitHub-Actions-Workflow `.github/workflows/build.yml` baut bei jedem Push auf `main` automatisch für alle drei Systeme und stellt die Installer als Artefakte bereit. Die Builds sind noch **nicht signiert**; macOS und Windows zeigen beim ersten Start daher eine Warnung.
 
 ## Tastenkürzel
 
